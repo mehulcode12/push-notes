@@ -16,8 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { translateToLocales, calculateGlobalReachScore, validateLocales } from "@/lib/lingo";
 import {
-  getTranslation,
-  getTranslatedLocales,
+  getTranslations,
   saveTranslation,
   getChangelogById,
 } from "@/lib/db";
@@ -79,21 +78,11 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 5. Filter out already-translated locales ──
-  // Check which locales are already in the DB — skip those
-  const alreadyTranslated = await getTranslatedLocales(changelogId);
+  const results: Record<string, any> = await getTranslations(changelogId);
+  const alreadyTranslated = Object.keys(results);
   const toTranslate = validLocales.filter(
     (l) => !alreadyTranslated.includes(l)
   );
-
-  // build result map — start with already-translated ones
-  const results: Record<string, any> = {};
-
-  for (const locale of alreadyTranslated) {
-    if (validLocales.includes(locale as SupportedLocale)) {
-      const existing = await getTranslation(changelogId, locale as SupportedLocale);
-      if (existing) results[locale] = existing;
-    }
-  }
 
   // ── 6. Translate new locales ───────────────
   if (toTranslate.length > 0) {

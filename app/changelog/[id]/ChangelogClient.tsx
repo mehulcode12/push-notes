@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ChangelogSections } from "@/lib/gemini";
 import type { ChangelogRecord } from "@/lib/db";
 import {
@@ -17,7 +17,7 @@ interface Props {
   initialSections:   ChangelogSections;
   initialLocale:     string;
   translatedLocales: string[];
-  englishSections:   ChangelogSections;
+  allTranslations:   Record<string, ChangelogSections>;
 }
 
 type TranslateStatus = "idle" | "translating" | "done" | "error";
@@ -41,14 +41,27 @@ export default function ChangelogClient({
   initialSections,
   initialLocale,
   translatedLocales: initialTranslated,
-  englishSections,
+  allTranslations:   initialAllTranslations,
 }: Props) {
-  const router = useRouter();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
 
-  const [sections,      setSections]      = useState<ChangelogSections>(initialSections ?? { added: [], fixed: [], changed: [], breaking: [] });
-  const [locale,        setLocale]        = useState<string>(initialLocale ?? "en");
-  const [translated,    setTranslated]    = useState<string[]>(initialTranslated ?? []);
-  const [pickerOpen,    setPickerOpen]    = useState(false);
+  const [toast, setToast] = useState<"saving" | "saved" | "hidden">(() =>
+    searchParams.get("new") === "1" ? "saving" : "hidden"
+  );
+
+  useEffect(() => {
+    if (toast !== "saving") return;
+    const t1 = setTimeout(() => setToast("saved"),  2500);
+    const t2 = setTimeout(() => setToast("hidden"), 4000);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [toast]);
+
+  const [sections,        setSections]        = useState<ChangelogSections>(initialSections ?? { added: [], fixed: [], changed: [], breaking: [] });
+  const [locale,          setLocale]          = useState<string>(initialLocale ?? "en");
+  const [translated,      setTranslated]      = useState<string[]>(initialTranslated ?? []);
+  const [allTranslations, setAllTranslations] = useState<Record<string, ChangelogSections>>(initialAllTranslations);
+  const [pickerOpen,      setPickerOpen]      = useState(false);
   const [selectedLangs, setSelectedLangs] = useState<string[]>([]);
   const [transStatus,   setTransStatus]   = useState<Record<string, TranslateStatus>>({});
   const [isTranslating, setIsTranslating] = useState(false);
@@ -64,20 +77,13 @@ export default function ChangelogClient({
 
   async function switchLocale(newLocale: string) {
     if (newLocale === locale) return;
-    if (newLocale === "en") {
-      setSections(englishSections);
-      setLocale("en");
-      router.replace(`/changelog/${id}`, { scroll: false });
-      return;
-    }
-    const res  = await fetch("/api/translate", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ changelogId: id, locales: [newLocale] }),
-    });
-    const data = await res.json();
-    if (data.translations?.[newLocale]) {
-      setSections(data.translations[newLocale]);
+    
+    // Instant switch from local cache
+    const target = allTranslations[newLocale];
+    if (target) {
+      setSections(target);
       setLocale(newLocale);
+      // Sync URL in background
       router.replace(`/changelog/${id}?lang=${newLocale}`, { scroll: false });
     }
   }
@@ -97,6 +103,9 @@ export default function ChangelogClient({
       const newStatus: Record<string, TranslateStatus> = {};
       selectedLangs.forEach(l => { newStatus[l] = data.translations?.[l] ? "done" : "error"; });
       setTransStatus(newStatus);
+      
+      // Update local cache
+      setAllTranslations(prev => ({ ...prev, ...data.translations }));
       setTranslated(data.translatedLocales ?? translated);
     } catch {
       const errStatus: Record<string, TranslateStatus> = {};
@@ -166,6 +175,10 @@ export default function ChangelogClient({
           background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
           background-size:48px 48px; pointer-events:none; z-index:0; opacity:0.5;
         }
+        .toast { position:fixed; top:20px; right:20px; z-index:999; display:flex; align-items:center; gap:10px; padding:12px 16px; border-radius:8px; font-size:12px; font-family:'JetBrains Mono',monospace; backdrop-filter:blur(12px); box-shadow:0 8px 24px rgba(0,0,0,0.4); cursor:pointer; }
+        .toast.saving { background:rgba(17,17,17,0.95); border:1px solid rgba(245,158,11,0.3); color:var(--amber); }
+        .toast.saved { background:rgba(17,17,17,0.95); border:1px solid rgba(34,197,94,0.3); color:var(--green); }
+        .toast-spinner { width:14px; height:14px; border:2px solid rgba(245,158,11,0.3); border-top-color:var(--amber); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
         .page { position:relative; z-index:1; max-width:780px; margin:0 auto; padding:32px 24px 80px; }
         .nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:40px; padding-bottom:20px; border-bottom:1px solid var(--border); }
         .nav-logo { font-size:13px; font-weight:700; color:var(--amber); text-decoration:none; letter-spacing:0.05em; }
@@ -230,6 +243,15 @@ export default function ChangelogClient({
         @media(max-width:600px){ .repo-name{font-size:26px;} .reach-bar{flex-wrap:wrap;} .picker-grid{grid-template-columns:1fr 1fr;} }
       `}</style>
 
+      {toast !== "hidden" && (
+        <div className={`toast ${toast}`} onClick={() => setToast("hidden")}>
+          {toast === "saving" ? (
+            <><div className="toast-spinner" /> Saving to database... <span style={{marginLeft:4,opacity:0.5}}>✕</span></>
+          ) : (
+            <>✓ Saved — future lookups will be instant <span style={{marginLeft:4,opacity:0.5}}>✕</span></>
+          )}
+        </div>
+      )}
       <div className="page">
         {/* Nav */}
         <nav className="nav">

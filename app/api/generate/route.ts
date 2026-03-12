@@ -179,15 +179,21 @@ export async function POST(req: NextRequest) {
   const id = generateChangelogId(analytics.meta.fullName);
 
   try {
-    await saveChangelog({
-      id,
-      repoUrl:  normalizedUrl,
-      repoName: analytics.meta.fullName,
-      version:  geminiResult.version,
-      tone:     geminiResult.tone,
-    });
-
-    await saveEnglishContent(id, geminiResult.sections);
+  void (async () => {
+    try {
+      await saveChangelog({
+        id,
+        repoUrl:  normalizedUrl,
+        repoName: analytics.meta.fullName,
+        version:  geminiResult.version,
+        tone:     geminiResult.tone,
+      });
+      await saveEnglishContent(id, geminiResult.sections);
+      console.log(`[generate] ✅ DB saved: ${id}`);
+    } catch (err) {
+      console.error(`[generate] ❌ DB save failed:`, err);
+    }
+  })();
 
   } catch (err: any) {
     console.error("[generate] DB save failed:", err);

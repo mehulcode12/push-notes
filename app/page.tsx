@@ -20,7 +20,6 @@ const EXAMPLE_REPOS = [
 const STEPS = [
   { id: "fetch",     label: "Fetching commits from GitHub..." },
   { id: "ai",        label: "Summarizing with Gemini AI..."   },
-  { id: "save",      label: "Saving to database..."           },
   { id: "done",      label: "Done!"                           },
 ];
 
@@ -43,8 +42,6 @@ export default function Home() {
       // small delay so user sees each step
       await delay(600);
       setStep("ai");
-      await delay(400);
-      setStep("save");
 
       const res = await fetch("/api/generate", {
         method:  "POST",
@@ -62,7 +59,7 @@ export default function Home() {
       await delay(500);
 
       // navigate to changelog page
-      router.push(`/changelog/${data.id}`);
+      router.push(`/changelog/${data.id}?new=1`);
 
     } catch (err: any) {
       setStep("error");
