@@ -35,6 +35,7 @@ export interface GenerateResponse {
   repoName: string;
   version: string;
   tone: string;
+  title: string;
   sections: {
     added:    { text: string; raw: string }[];
     fixed:    { text: string; raw: string }[];
@@ -108,7 +109,8 @@ export async function POST(req: NextRequest) {
           repoName:    cached.repoName,
           version:     cached.version,
           tone:        cached.tone,
-          sections,
+          title:       sections.title,
+          sections:    sections.sections,
           meta: {
             stars:       0,
             language:    null,
@@ -188,7 +190,7 @@ export async function POST(req: NextRequest) {
         version:  geminiResult.version,
         tone:     geminiResult.tone,
       });
-      await saveEnglishContent(id, geminiResult.sections);
+      await saveEnglishContent(id, geminiResult.title, geminiResult.sections);
       console.log(`[generate] ✅ DB saved: ${id}`);
     } catch (err) {
       console.error(`[generate] ❌ DB save failed:`, err);
@@ -206,6 +208,7 @@ export async function POST(req: NextRequest) {
     repoName:    analytics.meta.fullName,
     version:     geminiResult.version,
     tone:        geminiResult.tone,
+    title:       geminiResult.title,
     sections:    geminiResult.sections,
     meta: {
       stars:       analytics.meta.stars,

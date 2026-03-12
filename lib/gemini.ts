@@ -36,8 +36,9 @@ const BASE_DELAY_MS  = 2000;
 export type Tone = "formal" | "casual" | "technical";
 
 export interface ChangelogEntry {
-  text: string; // human-readable description
-  raw:  string; // original commit/PR for traceability
+  title: string; // concise headline
+  text:  string; // human-readable description
+  raw:   string; // original commit/PR for traceability
 }
 
 export interface ChangelogSections {
@@ -50,6 +51,7 @@ export interface ChangelogSections {
 export interface GeminiResult {
   tone:     Tone;
   version:  string;
+  title:    string;
   sections: ChangelogSections;
 }
 
@@ -314,8 +316,9 @@ function validateSections(parsed: any): ChangelogSections {
     return arr
       .filter((item) => item && typeof item === "object")
       .map((item) => ({
-        text: String(item.text ?? item.description ?? item.message ?? "").trim(),
-        raw:  String(item.raw  ?? item.original   ?? item.commit  ?? "").trim(),
+        title: String(item.title ?? "Update").trim(),
+        text:  String(item.text ?? item.description ?? item.message ?? "").trim(),
+        raw:   String(item.raw  ?? item.original   ?? item.commit  ?? "").trim(),
       }))
       .filter((e) => e.text.length > 0);
   };
@@ -424,10 +427,10 @@ export async function summarizeCommits(
   commits: Commit[],
   pullRequests: PullRequest[],
   tone: Tone
-): Promise<ChangelogSections> {
+): Promise<{ title: string; sections: ChangelogSections }> {
   if (!commits?.length) {
     console.warn("[gemini/summarizeCommits] No commits — returning empty");
-    return EMPTY_SECTIONS;
+    return { title: "New Update", sections: EMPTY_SECTIONS };
   }
 
   // filter non-user-facing commits — better quality + fewer tokens
@@ -471,9 +474,11 @@ PRs:
 ${prList}
 
 Output this EXACT JSON structure with no deviations:
-{"added":[{"text":"description","raw":"original"}],"fixed":[{"text":"description","raw":"original"}],"changed":[{"text":"description","raw":"original"}],"breaking":[{"text":"description","raw":"original"}]}
+{"title": "Release Headline", "added":[{"title":"Entry Title","text":"description","raw":"original"}],"fixed":[{"title":"Entry Title","text":"description","raw":"original"}],"changed":[{"title":"Entry Title","text":"description","raw":"original"}],"breaking":[{"title":"Entry Title","text":"description","raw":"original"}]}
 
 Rules:
+- Headline = A concise, relevant headline for the overall release
+- Entry Title = A short, punchy title for THIS specific change (max 6-8 words)
 - added    = new features, new APIs, new commands, new options
 - fixed    = bug fixes, crash fixes, error corrections
 - changed  = refactors, updates, improvements (non-breaking)
@@ -500,14 +505,17 @@ Rules:
 
     if (!parsed) {
       console.error("[gemini/summarizeCommits] All JSON parsing strategies failed — using empty sections");
-      return EMPTY_SECTIONS;
+      return { title: "New Update", sections: EMPTY_SECTIONS };
     }
 
-    return validateSections(parsed);
+    return {
+      title: (parsed.title || "New Update").trim(),
+      sections: validateSections(parsed),
+    };
 
   } catch (err) {
     console.error("[gemini/summarizeCommits] Failed:", err);
-    return EMPTY_SECTIONS; // never crash
+    return { title: "New Update", sections: EMPTY_SECTIONS }; // never crash
   }
 }
 
@@ -532,7 +540,7 @@ export async function generateChangelog(
   ]);
 
   // summarize after tone is known — tone affects writing style
-  const sections = await summarizeCommits(commits, pullRequests, tone);
+  const { title, sections } = await summarizeCommits(commits, pullRequests, tone);
 
-  return { tone, version, sections };
+  return { tone, version, title, sections };
 }

@@ -19,8 +19,10 @@ import {
   getTranslations,
   saveTranslation,
   getChangelogById,
+  getTranslation,
+  getTranslatedLocales,
 } from "@/lib/db";
-import { SupportedLocale } from "@/lib/lingo";
+import { SupportedLocale } from "@/lib/lingo-client";
 
 export async function POST(req: NextRequest) {
   // ── 1. Parse + validate request ───────────
@@ -69,8 +71,8 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 4. Fetch English source ────────────────
-  const englishSections = await getTranslation(changelogId, "en");
-  if (!englishSections) {
+  const englishContent = await getTranslation(changelogId, "en");
+  if (!englishContent) {
     return NextResponse.json(
       { error: "English source not found for this changelog" },
       { status: 404 }
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
   // ── 6. Translate new locales ───────────────
   if (toTranslate.length > 0) {
     const translations = await translateToLocales(
-      englishSections,
+      englishContent,
       toTranslate,
       (locale, status) => {
         console.log(`[translate] ${locale}: ${status}`);
@@ -100,13 +102,13 @@ export async function POST(req: NextRequest) {
         await saveTranslation({
           changelogId,
           locale: translation.locale,
-          content: translation.sections,
+          content: translation.content,
         });
-        results[translation.locale] = translation.sections;
+        results[translation.locale] = translation.content;
       } catch (err) {
         console.error(`[translate] Failed to save ${translation.locale}:`, err);
         // still return the translation even if save failed
-        results[translation.locale] = translation.sections;
+        results[translation.locale] = translation.content;
       }
     }
   }

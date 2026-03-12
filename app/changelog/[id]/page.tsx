@@ -2,7 +2,7 @@
 "use server";
 
 import { notFound } from "next/navigation";
-import { getChangelogById, getTranslations } from "@/lib/db";
+import { getChangelogById, getTranslations, TranslatedContent } from "@/lib/db";
 import { SupportedLocale } from "@/lib/lingo-client";
 import ChangelogClient from "./ChangelogClient";
 
@@ -39,23 +39,23 @@ export default async function ChangelogPage({ params, searchParams }: Props) {
   }
 
   const allTranslations = await getTranslations(id);
-  const englishSections = allTranslations["en"];
+  const englishContent = allTranslations["en"];
   
-  if (!englishSections) {
+  if (!englishContent) {
     console.log("[changelog page] english sections not found for:", id);
     notFound();
   }
 
   const translatedLocales = Object.keys(allTranslations);
 
-  let initialSections = englishSections;
-  let initialLocale   = "en";
+  let initialContent = englishContent;
+  let initialLocale  = "en";
 
   if (lang && lang !== "en" && translatedLocales.includes(lang)) {
     const translated = allTranslations[lang as SupportedLocale];
     if (translated) {
-      initialSections = translated;
-      initialLocale   = lang;
+      initialContent = translated;
+      initialLocale  = lang;
     }
   }
 
@@ -63,7 +63,8 @@ export default async function ChangelogPage({ params, searchParams }: Props) {
   console.log("[changelog page] serving:", {
     id,
     repoName: changelog.repoName,
-    sections: Object.values(initialSections).flat().length,
+    title:    initialContent.title,
+    sections: Object.values(initialContent.sections).flat().length,
     locales:  translatedLocales,
   });
 
@@ -71,7 +72,7 @@ export default async function ChangelogPage({ params, searchParams }: Props) {
     <ChangelogClient
       id={id}
       changelog={changelog}
-      initialSections={initialSections}
+      initialContent={initialContent}
       initialLocale={initialLocale}
       translatedLocales={translatedLocales}
       allTranslations={allTranslations}

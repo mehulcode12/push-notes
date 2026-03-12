@@ -10,14 +10,15 @@ import {
   calculateGlobalReachScore,
   getTranslatableLocales,
 } from "@/lib/lingo-client";
+import { type TranslatedContent } from "@/lib/db";
 
 interface Props {
   id:                string;
   changelog:         ChangelogRecord;
-  initialSections:   ChangelogSections;
+  initialContent:    TranslatedContent;
   initialLocale:     string;
   translatedLocales: string[];
-  allTranslations:   Record<string, ChangelogSections>;
+  allTranslations:   Record<string, TranslatedContent>;
 }
 
 type TranslateStatus = "idle" | "translating" | "done" | "error";
@@ -38,7 +39,7 @@ const SECTION_CONFIG = [
 export default function ChangelogClient({
   id,
   changelog,
-  initialSections,
+  initialContent,
   initialLocale,
   translatedLocales: initialTranslated,
   allTranslations:   initialAllTranslations,
@@ -57,10 +58,11 @@ export default function ChangelogClient({
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [toast]);
 
-  const [sections,        setSections]        = useState<ChangelogSections>(initialSections ?? { added: [], fixed: [], changed: [], breaking: [] });
+  const [title,           setTitle]           = useState<string>(initialContent?.title ?? "New Update");
+  const [sections,        setSections]        = useState<ChangelogSections>(initialContent?.sections ?? { added: [], fixed: [], changed: [], breaking: [] });
   const [locale,          setLocale]          = useState<string>(initialLocale ?? "en");
   const [translated,      setTranslated]      = useState<string[]>(initialTranslated ?? []);
-  const [allTranslations, setAllTranslations] = useState<Record<string, ChangelogSections>>(initialAllTranslations);
+  const [allTranslations, setAllTranslations] = useState<Record<string, TranslatedContent>>(initialAllTranslations);
   const [pickerOpen,      setPickerOpen]      = useState(false);
   const [selectedLangs, setSelectedLangs] = useState<string[]>([]);
   const [transStatus,   setTransStatus]   = useState<Record<string, TranslateStatus>>({});
@@ -81,7 +83,8 @@ export default function ChangelogClient({
     // Instant switch from local cache
     const target = allTranslations[newLocale];
     if (target) {
-      setSections(target);
+      setTitle(target.title);
+      setSections(target.sections);
       setLocale(newLocale);
       // Sync URL in background
       router.replace(`/changelog/${id}?lang=${newLocale}`, { scroll: false });
@@ -191,7 +194,8 @@ export default function ChangelogClient({
         .repo-name { font-family:'Instrument Serif',serif; font-size:36px; font-weight:400; color:#fff; margin-bottom:12px; line-height:1.1; }
         .meta-row { display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
         .meta-tag { display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); letter-spacing:0.05em; }
-        .version-badge { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2); color:var(--amber); font-size:11px; padding:3px 10px; border-radius:100px; font-weight:700; letter-spacing:0.05em; }
+        .version-badge { background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2); color:#60a5fa; font-size:11px; padding:3px 10px; border-radius:100px; font-weight:700; letter-spacing:0.05em; }
+        .repo-badge { background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2); color:var(--amber); font-size:11px; padding:3px 10px; border-radius:100px; font-weight:700; letter-spacing:0.05em; }
         .tone-badge { background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--muted); font-size:11px; padding:3px 10px; border-radius:100px; }
         .reach-bar { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; margin-bottom:24px; display:flex; align-items:center; gap:16px; }
         .reach-label { font-size:11px; color:var(--muted); white-space:nowrap; }
@@ -223,11 +227,14 @@ export default function ChangelogClient({
         .section-count { font-size:11px; color:var(--muted); }
         .entry { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:8px; margin-bottom:6px; border:1px solid; transition:all 0.15s; }
         .entry:hover { filter:brightness(1.08); }
-        .entry-text { flex:1; font-size:13px; line-height:1.6; color:var(--text); cursor:pointer; }
-        .entry-preview { display:inline; }
-        .entry-toggle { color:var(--amber); font-size:11px; margin-left:6px; white-space:nowrap; }
+        .entry-text { flex:1; line-height:1.6; color:var(--text); cursor:pointer; }
+        .entry-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:4px; }
+        .entry-title { font-weight:700; font-size:14px; color:#fff; }
+        .entry-desc { font-size:13px; color:var(--text); opacity:0.9; }
+        .entry-preview { font-size:13px; color:var(--text); opacity:0.8; }
+        .entry-toggle { color:var(--amber); font-size:11px; white-space:nowrap; margin-top:2px; }
         .entry-full { margin-top:4px; }
-        .entry-raw { font-size:10px; color:var(--muted); margin-top:6px; font-style:italic; padding-top:6px; border-top:1px solid var(--border); }
+        .entry-raw { font-size:10px; color:var(--muted); margin-top:8px; font-style:italic; padding-top:6px; border-top:1px solid var(--border); }
         .tts-btn { background:transparent; border:none; cursor:pointer; color:var(--muted); font-size:14px; padding:2px; flex-shrink:0; transition:color 0.15s; margin-top:2px; display:flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:4px; }
         .tts-btn:hover { color:var(--text); background:rgba(255,255,255,0.05); }
         .tts-btn.speaking { color:var(--amber); animation:tts-pulse 1s infinite; }
@@ -264,8 +271,9 @@ export default function ChangelogClient({
 
         {/* Header */}
         <div className="cl-header">
-          <h1 className="repo-name">{changelog.repoName}</h1>
+          <h1 className="repo-name">{title}</h1>
           <div className="meta-row">
+            <span className="repo-badge">{changelog.repoName}</span>
             <span className="version-badge">{changelog.version}</span>
             <span className="tone-badge">{changelog.tone}</span>
             <span className="meta-tag">
@@ -361,22 +369,20 @@ export default function ChangelogClient({
                 return (
                   <div key={i} className="entry" style={{ backgroundColor: bg, borderColor: border }}>
                     <div className="entry-text" onClick={() => isLong && toggleEntry(entryId)}>
-                      {/* Collapsed: show preview + toggle */}
+                      <div className="entry-title-row">
+                        <span className="entry-title">{entry.title}</span>
+                        {isLong && (
+                          <span className="entry-toggle">{isOpen ? "▲ less" : "▼ more"}</span>
+                        )}
+                      </div>
+
                       {!isOpen && (
-                        <>
-                          <span className="entry-preview">{preview}</span>
-                          {isLong && (
-                            <span className="entry-toggle">▼ more</span>
-                          )}
-                        </>
+                        <div className="entry-preview">{preview}</div>
                       )}
-                      {/* Expanded: show full text + raw commit */}
+
                       {isOpen && (
                         <div className="entry-full">
-                          {entry.text}
-                          {isLong && (
-                            <span className="entry-toggle"> ▲ less</span>
-                          )}
+                          <div className="entry-desc">{entry.text}</div>
                           <div className="entry-raw">{entry.raw}</div>
                         </div>
                       )}

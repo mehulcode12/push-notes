@@ -14,6 +14,11 @@ import ws from "ws";
 import { ChangelogSections, Tone } from "./gemini";
 import { SupportedLocale } from "./lingo-client";
 
+export interface TranslatedContent {
+  title:    string;
+  sections: ChangelogSections;
+}
+
 // Required for Node.js environments without native WebSocket (< v22)
 // This is what fixes the ENOTFOUND error with HTTP transport
 neonConfig.webSocketConstructor = ws;
@@ -49,7 +54,7 @@ export interface TranslationRecord {
   id: number;
   changelogId: string;
   locale: SupportedLocale;
-  content: ChangelogSections;
+  content: TranslatedContent;
   createdAt: string;
 }
 
@@ -189,7 +194,7 @@ export async function getChangelogById(
 export async function saveTranslation(data: {
   changelogId: string;
   locale: SupportedLocale;
-  content: ChangelogSections;
+  content: TranslatedContent;
 }): Promise<void> {
   const pool = getPool();
   try {
@@ -218,7 +223,7 @@ export async function saveTranslation(data: {
 
 export async function getTranslations(
   changelogId: string
-): Promise<Record<SupportedLocale, ChangelogSections>> {
+): Promise<Record<SupportedLocale, TranslatedContent>> {
   const pool = getPool();
   try {
     const { rows } = await pool.query(
@@ -229,14 +234,14 @@ export async function getTranslations(
       [changelogId]
     );
 
-    const result: Partial<Record<SupportedLocale, ChangelogSections>> = {};
-    for (const row of rows) {
-      result[row.locale as SupportedLocale] = row.content as ChangelogSections;
+    const result: Partial<Record<SupportedLocale, TranslatedContent>> = {};
+    for (const locale of rows) {
+      result[locale.locale as SupportedLocale] = locale.content as TranslatedContent;
     }
-    return result as Record<SupportedLocale, ChangelogSections>;
+    return result as Record<SupportedLocale, TranslatedContent>;
   } catch (error) {
     console.error("[db/getTranslations] Error:", error);
-    return {} as Record<SupportedLocale, ChangelogSections>;
+    return {} as Record<SupportedLocale, TranslatedContent>;
   } finally {
     await pool.end();
   }
@@ -251,7 +256,7 @@ export async function getTranslations(
 export async function getTranslation(
   changelogId: string,
   locale: SupportedLocale
-): Promise<ChangelogSections | null> {
+): Promise<TranslatedContent | null> {
   const pool = getPool();
   try {
     const { rows } = await pool.query(
@@ -261,7 +266,7 @@ export async function getTranslation(
        LIMIT 1`,
       [changelogId, locale]
     );
-    return rows.length > 0 ? (rows[0].content as ChangelogSections) : null;
+    return rows.length > 0 ? (rows[0].content as TranslatedContent) : null;
   } catch (error) {
     console.error(`[db/getTranslation] Error for ${locale}:`, error);
     return null;
@@ -307,11 +312,12 @@ export async function getTranslatedLocales(
 
 export async function saveEnglishContent(
   changelogId: string,
-  content: ChangelogSections
+  title: string,
+  sections: ChangelogSections
 ): Promise<void> {
   await saveTranslation({
     changelogId,
     locale: "en",
-    content,
+    content: { title, sections },
   });
 }
