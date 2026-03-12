@@ -30,6 +30,7 @@ export interface Commit {
   shortMessage: string;
   author: string;
   date: string;
+  filesChanged?: { filename: string; additions: number; deletions: number; patch?: string }[];
 }
 
 export interface PullRequest {
@@ -155,6 +156,19 @@ export async function fetchRepoMeta(
 
 // 2. Recent commits (last 20)
 // Fetches last 20 commits — enough to capture recent activity without overwhelming the API for Demo.
+async function fetchCommitDetails(owner: string, repo: string, sha: string) {
+  try {
+    const data = await githubFetch(`/repos/${owner}/${repo}/commits/${sha}`);
+    return (data.files ?? []).map((f: any) => ({
+      filename:  f.filename,
+      additions: f.additions,
+      deletions: f.deletions,
+      patch:     f.patch ? f.patch.slice(0, 300) : undefined,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 export async function fetchCommits(
   owner: string,
@@ -165,13 +179,21 @@ export async function fetchCommits(
     `/repos/${owner}/${repo}/commits?per_page=${limit}`
   );
 
-  return data.map((item: any) => ({
+  const commits = data.map((item: any) => ({
     sha: item.sha,
     shortMessage: (item.commit.message ?? "").split("\n")[0].trim(),
-    author:
-      item.commit.author?.name ?? item.author?.login ?? "Unknown",
+    author: item.commit.author?.name ?? item.author?.login ?? "Unknown",
     date: item.commit.author?.date ?? "",
   }));
+
+  const withDetails = await Promise.all(
+    commits.slice(0, 8).map(async (c: Commit) => ({
+      ...c,
+      filesChanged: await fetchCommitDetails(owner, repo, c.sha),
+    }))
+  );
+
+  return [...withDetails, ...commits.slice(8)];
 }
 
 // 3. Recently merged PRs (last 10)

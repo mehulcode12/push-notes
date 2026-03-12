@@ -45,7 +45,7 @@ export default function ChangelogClient({
 }: Props) {
   const router = useRouter();
 
-  const [sections,      setSections]      = useState<ChangelogSections>(initialSections   ?? { added: [], fixed: [], changed: [], breaking: [] });
+  const [sections,      setSections]      = useState<ChangelogSections>(initialSections ?? { added: [], fixed: [], changed: [], breaking: [] });
   const [locale,        setLocale]        = useState<string>(initialLocale ?? "en");
   const [translated,    setTranslated]    = useState<string[]>(initialTranslated ?? []);
   const [pickerOpen,    setPickerOpen]    = useState(false);
@@ -53,12 +53,13 @@ export default function ChangelogClient({
   const [transStatus,   setTransStatus]   = useState<Record<string, TranslateStatus>>({});
   const [isTranslating, setIsTranslating] = useState(false);
   const [speaking,      setSpeaking]      = useState<string | null>(null);
+  const [expanded,      setExpanded]      = useState<Record<string, boolean>>({});
   const [embedOpen,     setEmbedOpen]     = useState(false);
   const [copied,        setCopied]        = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  const reachScore      = calculateGlobalReachScore((translated ?? []).filter(l => l !== "en") as SupportedLocale[]);
-  const totalEntries    = Object.values(sections ?? {}).flat().length;
+  const reachScore          = calculateGlobalReachScore((translated ?? []).filter(l => l !== "en") as SupportedLocale[]);
+  const totalEntries        = Object.values(sections ?? {}).flat().length;
   const translatableLocales = getTranslatableLocales();
 
   async function switchLocale(newLocale: string) {
@@ -115,19 +116,23 @@ export default function ChangelogClient({
       return;
     }
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang  = VOICE_LANGS[locale] ?? "en-US";
-    utterance.rate  = 0.95;
-    const voices    = window.speechSynthesis.getVoices();
-    const langCode  = VOICE_LANGS[locale] ?? "en-US";
-    const best      = voices.find(v => v.lang === langCode && v.name.toLowerCase().includes("google"))
-                   ?? voices.find(v => v.lang.startsWith(langCode.slice(0, 2)));
+    const utterance  = new SpeechSynthesisUtterance(text);
+    utterance.lang   = VOICE_LANGS[locale] ?? "en-US";
+    utterance.rate   = 0.95;
+    const voices     = window.speechSynthesis.getVoices();
+    const langCode   = VOICE_LANGS[locale] ?? "en-US";
+    const best       = voices.find(v => v.lang === langCode && v.name.toLowerCase().includes("google"))
+                    ?? voices.find(v => v.lang.startsWith(langCode.slice(0, 2)));
     if (best) utterance.voice = best;
     utterance.onend   = () => setSpeaking(null);
     utterance.onerror = () => setSpeaking(null);
     utteranceRef.current = utterance;
     setSpeaking(entryId);
     window.speechSynthesis.speak(utterance);
+  }
+
+  function toggleEntry(entryId: string) {
+    setExpanded(prev => ({ ...prev, [entryId]: !prev[entryId] }));
   }
 
   function copyEmbed() {
@@ -204,9 +209,12 @@ export default function ChangelogClient({
         .section-label { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; }
         .section-count { font-size:11px; color:var(--muted); }
         .entry { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:8px; margin-bottom:6px; border:1px solid; transition:all 0.15s; }
-        .entry:hover { filter:brightness(1.1); }
-        .entry-text { flex:1; font-size:13px; line-height:1.6; color:var(--text); }
-        .entry-raw { font-size:10px; color:var(--muted); margin-top:4px; font-style:italic; }
+        .entry:hover { filter:brightness(1.08); }
+        .entry-text { flex:1; font-size:13px; line-height:1.6; color:var(--text); cursor:pointer; }
+        .entry-preview { display:inline; }
+        .entry-toggle { color:var(--amber); font-size:11px; margin-left:6px; white-space:nowrap; }
+        .entry-full { margin-top:4px; }
+        .entry-raw { font-size:10px; color:var(--muted); margin-top:6px; font-style:italic; padding-top:6px; border-top:1px solid var(--border); }
         .tts-btn { background:transparent; border:none; cursor:pointer; color:var(--muted); font-size:14px; padding:2px; flex-shrink:0; transition:color 0.15s; margin-top:2px; display:flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:4px; }
         .tts-btn:hover { color:var(--text); background:rgba(255,255,255,0.05); }
         .tts-btn.speaking { color:var(--amber); animation:tts-pulse 1s infinite; }
@@ -323,12 +331,33 @@ export default function ChangelogClient({
                 <span className="section-count">{entries.length}</span>
               </div>
               {entries.map((entry, i) => {
-                const entryId = `${key}-${i}`;
+                const entryId   = `${key}-${i}`;
+                const isOpen    = expanded[entryId] ?? false;
+                const isLong    = entry.text.length > 100;
+                const preview   = isLong ? entry.text.slice(0, 100).trimEnd() + "…" : entry.text;
+
                 return (
                   <div key={i} className="entry" style={{ backgroundColor: bg, borderColor: border }}>
-                    <div className="entry-text">
-                      {entry.text}
-                      <div className="entry-raw">{entry.raw}</div>
+                    <div className="entry-text" onClick={() => isLong && toggleEntry(entryId)}>
+                      {/* Collapsed: show preview + toggle */}
+                      {!isOpen && (
+                        <>
+                          <span className="entry-preview">{preview}</span>
+                          {isLong && (
+                            <span className="entry-toggle">▼ more</span>
+                          )}
+                        </>
+                      )}
+                      {/* Expanded: show full text + raw commit */}
+                      {isOpen && (
+                        <div className="entry-full">
+                          {entry.text}
+                          {isLong && (
+                            <span className="entry-toggle"> ▲ less</span>
+                          )}
+                          <div className="entry-raw">{entry.raw}</div>
+                        </div>
+                      )}
                     </div>
                     <button
                       className={`tts-btn ${speaking === entryId ? "speaking" : ""}`}

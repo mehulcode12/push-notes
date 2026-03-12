@@ -436,9 +436,16 @@ export async function summarizeCommits(
   );
   const finalCommits = relevant.length > 0 ? relevant : commits;
 
-  const commitList = finalCommits
-    .map((c) => `- ${sanitize(c.shortMessage, 100)}`)
-    .join("\n");
+  const commitList = finalCommits.map((c) => {
+    let line = `- ${sanitize(c.shortMessage, 100)}`;
+    if (c.filesChanged?.length) {
+      const files = c.filesChanged
+        .map(f => `${f.filename} (+${f.additions}/-${f.deletions})${f.patch ? `: ${f.patch.slice(0, 150)}` : ""}`)
+        .join("; ");
+      line += `\n  Files: ${files}`;
+    }
+    return line;
+  }).join("\n");
 
   const prList = pullRequests.length > 0
     ? pullRequests
@@ -473,7 +480,10 @@ Rules:
 - breaking = anything that breaks existing behavior
 - Skip chore/ci/docs/test/style/build commits
 - Deduplicate commits and PRs that describe the same change
-- Max 1 sentence per entry, keep it concise
+- Use the file changes and diffs to explain REAL impact — what changed in the code and why it matters
+- Bad: "Added whoami support"
+- Good: "detailed description of what was added, why it matters, and how users can take advantage of it. If the commit message is vague, use the code diff to infer more details about the change and its impact on users."
+- Max 3-4 sentences per entry
 - Empty section = empty array []
 - Return ONLY the JSON — absolutely nothing else`;
 
