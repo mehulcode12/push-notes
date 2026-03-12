@@ -1,28 +1,30 @@
-import { generateChangelogId, saveChangelog, getChangelogById } from "@/lib/db";
-
 export default async function Home() {
-  try {
-    const id = generateChangelogId("facebook/react");
-    console.log("🆔 Generated ID:", id);
+  // Test /api/generate
+  const genRes = await fetch("http://localhost:3000/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: "github.com/lingodotdev/lingo.dev" }),
+  });
+  const genData = await genRes.json();
+  console.log("✅ Generate:", genData.id, genData.version, "cached:", genData.cached);
 
-    const saved = await saveChangelog({
-      id,
-      repoUrl: "github.com/facebook/react",
-      repoName: "facebook/react",
-      version: "v19.0.0",
-      tone: "technical",
-    });
-    console.log("💾 Saved:", saved);
+  // Test /api/translate
+  const transRes = await fetch("http://localhost:3000/api/translate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ changelogId: genData.id, locales: ["hi", "es"] }),
+  });
+  const transData = await transRes.json();
+  console.log("✅ Translate:", transData.translatedLocales, "reach:", transData.reachScore + "%");
 
-    const found = await getChangelogById(id);
-    console.log("📖 Fetched:", found);
-
-  } catch (error: any) {
-    console.error("❌ Full error:", JSON.stringify(error, null, 2));
-    console.error("❌ Message:", error?.message);
-    console.error("❌ Cause:", error?.cause);
-    console.error("❌ Stack:", error?.stack);
-  }
+  // Test cache — same repo again should be instant
+  const cachedRes = await fetch("http://localhost:3000/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url: "github.com/lingodotdev/lingo.dev" }),
+  });
+  const cachedData = await cachedRes.json();
+  console.log("⚡ Cached hit:", cachedData.cached);
 
   return <main>check terminal!</main>;
 }
