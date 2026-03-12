@@ -11,6 +11,7 @@
   "dependencies": {
     "@google/genai": "^1.44.0",
     "@neondatabase/serverless": "^1.0.2",
+    "lingo.dev": "^0.133.2",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
