@@ -12,7 +12,7 @@
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { ChangelogSections, Tone } from "./gemini";
-import { SupportedLocale } from "./lingo";
+import { SupportedLocale } from "./lingo-client";
 
 // Required for Node.js environments without native WebSocket (< v22)
 // This is what fixes the ENOTFOUND error with HTTP transport

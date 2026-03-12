@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["lingo.dev", "@lingo.dev/sdk", "jsdom", "ws"],
 };
 
 export default nextConfig;
