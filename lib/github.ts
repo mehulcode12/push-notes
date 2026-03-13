@@ -163,7 +163,7 @@ async function fetchCommitDetails(owner: string, repo: string, sha: string) {
       filename:  f.filename,
       additions: f.additions,
       deletions: f.deletions,
-      patch:     f.patch ? f.patch.slice(0, 300) : undefined,
+      patch:     f.patch ? f.patch.slice(0, 5000) : undefined,
     }));
   } catch {
     return [];

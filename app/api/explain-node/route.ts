@@ -23,7 +23,7 @@ File: ${label}
 
 Diff patch:
 \`\`\`
-${patch.slice(0, 800)}
+${patch.slice(0, 5000)}
 \`\`\`
 
 In exactly 2 sentences:

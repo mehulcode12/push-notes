@@ -1,7 +1,7 @@
 "use client";
 
 import {
-    useState, useCallback, useMemo, memo, useEffect,
+    useState, useCallback, useMemo, memo, useEffect, useRef,
 } from "react";
 import ReactFlow, {
     Background, Controls, MiniMap,
@@ -49,6 +49,12 @@ const SEC = {
     changed: "#f59e0b",
     breaking: "#ef4444",
 } as const;
+
+const VOICE_LANGS: Record<string, string> = {
+    en: "en-US", hi: "hi-IN", es: "es-ES", fr: "fr-FR",
+    ja: "ja-JP", de: "de-DE", ar: "ar-SA", pt: "pt-BR",
+    zh: "zh-CN", ko: "ko-KR",
+};
 
 // ─────────────────────────────────────────────────────────────
 // CUSTOM NODES
@@ -230,9 +236,11 @@ interface PanelProps {
     onClose: () => void;
     onExplain: (id: string, patch: string, label: string) => Promise<void>;
     loading: boolean;
+    speaking: boolean;
+    onSpeak: (text: string) => void;
 }
 
-const DetailPanel = memo(({ node, onClose, onExplain, loading }: PanelProps) => {
+const DetailPanel = memo(({ node, onClose, onExplain, loading, speaking, onSpeak }: PanelProps) => {
     const c = C[node.churnScore];
     const secColor = node.section ? SEC[node.section] : c.glow;
 
@@ -313,7 +321,22 @@ const DetailPanel = memo(({ node, onClose, onExplain, loading }: PanelProps) => 
                         borderRadius: 8, padding: "12px 14px",
                         fontSize: 11, color: "#d4d4d4", lineHeight: 1.7, marginBottom: 16,
                     }}>
-                        <div style={{ fontSize: 8, color: "#f59e0b", letterSpacing: "0.1em", marginBottom: 8 }}>✨ AI ANALYSIS</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <div style={{ fontSize: 8, color: "#f59e0b", letterSpacing: "0.1em" }}>✨ AI ANALYSIS</div>
+                            <button
+                                onClick={() => onSpeak(node.aiExplanation!)}
+                                style={{
+                                    background: speaking ? "rgba(245,158,11,0.2)" : "rgba(245,158,11,0.1)",
+                                    border: "1px solid rgba(245,158,11,0.2)",
+                                    borderRadius: 4, padding: "2px 6px",
+                                    color: "#f59e0b", fontSize: 10, cursor: "pointer",
+                                    display: "flex", alignItems: "center", gap: 4,
+                                    transition: "all 0.2s",
+                                }}
+                            >
+                                {speaking ? "⏹ Stop" : "🔊 Listen"}
+                            </button>
+                        </div>
                         {node.aiExplanation}
                     </div>
                 ) : node.patch ? (
@@ -380,7 +403,7 @@ const DetailPanel = memo(({ node, onClose, onExplain, loading }: PanelProps) => 
                             fontSize: 9.5, fontFamily: "monospace",
                             maxHeight: 160, overflowY: "auto", lineHeight: 1.6,
                         }}>
-                            {node.patch.split("\n").slice(0, 40).map((line, i) => (
+                            {node.patch.split("\n").slice(0, 200).map((line, i) => (
                                 <div key={i} style={{
                                     color: line.startsWith("+") ? "#22c55e"
                                         : line.startsWith("-") ? "#ef4444"
@@ -521,6 +544,10 @@ export default function GraphClient({
     const [pickerOpen, setPickerOpen] = useState(false);
     const [translating, setTranslating] = useState(false);
     const [locale, setLocale] = useState(initialLocale);
+    
+    // TTS State
+    const [speaking, setSpeaking] = useState(false);
+    const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
     const stats = graphData.stats;
 
@@ -559,10 +586,14 @@ export default function GraphClient({
 
     const handleExplain = useCallback(async (nodeId: string, patch: string, label: string) => {
         setExplaining(true);
+        // Find human readable language name for the AI to understand
+        const locInfo = getTranslatableLocales().find(l => l.code === locale);
+        const langName = locInfo ? locInfo.nativeName : locale;
+        
         try {
             const res = await fetch("/api/explain-node", {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ patch, label, repoName: changelog.repoName }),
+                body: JSON.stringify({ patch, label, repoName: changelog.repoName, lang: langName }),
             });
             const data = await res.json();
             const exp = data.explanation ?? "No explanation available.";
@@ -574,7 +605,7 @@ export default function GraphClient({
             setSelectedNode(prev => prev ? { ...prev, aiExplanation: "Failed to get explanation." } : prev);
         }
         setExplaining(false);
-    }, [changelog.repoName, setNodes]);
+    }, [changelog.repoName, setNodes, locale]);
 
     const handleTranslate = useCallback(async (langs: string[]) => {
         if (!langs.length) return;
@@ -589,6 +620,33 @@ export default function GraphClient({
         setTranslating(false);
         setPickerOpen(false);
     }, [id]);
+
+    const handleSpeak = useCallback((text: string) => {
+        if (!("speechSynthesis" in window)) return;
+        if (speaking) {
+            window.speechSynthesis.cancel();
+            setSpeaking(false);
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = VOICE_LANGS[locale] ?? "en-US";
+        utterance.rate = 0.95;
+
+        const voices = window.speechSynthesis.getVoices();
+        const langCode = VOICE_LANGS[locale] ?? "en-US";
+        const best = voices.find(v => v.lang === langCode && v.name.toLowerCase().includes("google"))
+            ?? voices.find(v => v.lang.startsWith(langCode.slice(0, 2)));
+
+        if (best) utterance.voice = best;
+        utterance.onend = () => setSpeaking(false);
+        utterance.onerror = () => setSpeaking(false);
+        utteranceRef.current = utterance;
+
+        setSpeaking(true);
+        window.speechSynthesis.speak(utterance);
+    }, [locale, speaking]);
 
     // Global click-off to deselect
     const onPaneClick = useCallback(() => setSelectedNode(null), []);
@@ -797,6 +855,8 @@ export default function GraphClient({
                         onClose={() => setSelectedNode(null)}
                         onExplain={handleExplain}
                         loading={explaining}
+                        speaking={speaking}
+                        onSpeak={handleSpeak}
                     />
                 )}
 

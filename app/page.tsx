@@ -11,25 +11,25 @@ import { useRouter } from "next/navigation";
 // Example repos for quick demo
 const EXAMPLE_REPOS = [
   { label: "lingo.dev", url: "github.com/lingodotdev/lingo.dev" },
-  { label: "next.js",   url: "github.com/vercel/next.js" },
-  { label: "react",     url: "github.com/facebook/react" },
-  { label: "vscode",    url: "github.com/microsoft/vscode" },
+  { label: "next.js", url: "github.com/vercel/next.js" },
+  { label: "react", url: "github.com/facebook/react" },
+  { label: "vscode", url: "github.com/microsoft/vscode" },
 ];
 
 // Live step-by-step progress messages
 const STEPS = [
-  { id: "fetch",     label: "Fetching commits from GitHub..." },
-  { id: "ai",        label: "Summarizing with Gemini AI..."   },
-  { id: "done",      label: "Done!"                           },
+  { id: "fetch", label: "Fetching commits from GitHub..." },
+  { id: "ai", label: "Summarizing with Gemini AI..." },
+  { id: "done", label: "Done!" },
 ];
 
 type Step = "idle" | "fetch" | "ai" | "save" | "done" | "error";
 
 export default function Home() {
   const router = useRouter();
-  const [url, setUrl]           = useState("");
-  const [step, setStep]         = useState<Step>("idle");
-  const [error, setError]       = useState<string | null>(null);
+  const [url, setUrl] = useState("");
+  const [step, setStep] = useState<Step>("idle");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleGenerate(inputUrl?: string) {
     const target = (inputUrl ?? url).trim();
@@ -44,9 +44,9 @@ export default function Home() {
       setStep("ai");
 
       const res = await fetch("/api/generate", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ url: target }),
+        body: JSON.stringify({ url: target }),
       });
 
       const data = await res.json();
@@ -443,18 +443,18 @@ export default function Home() {
           </h1>
           <p className="subline">
             Paste any public GitHub repo.<br />
-            Get an AI-generated changelog with <em style={{color: 'var(--amber)'}}>mindmap view</em>, translated into  <em style={{color: 'var(--amber)'}}>10+ languages instantly.</em>
+            Get an AI-generated changelog with <em style={{ color: 'var(--amber)' }}>enhanced knowledge graph</em>, translated into  <em style={{ color: 'var(--amber)' }}>10+ languages instantly.</em>
           </p>
-          
+
         </div>
 
         {/* Main card */}
         <div className="card">
           {/* macOS-style titlebar */}
           <div className="card-header">
-            <div className="dot dot-red"    />
+            <div className="dot dot-red" />
             <div className="dot dot-yellow" />
-            <div className="dot dot-green"  />
+            <div className="dot dot-green" />
             <span className="card-title">pushnotes — terminal</span>
           </div>
 
@@ -485,7 +485,7 @@ export default function Home() {
           {isLoading && (
             <div className="steps">
               {STEPS.filter(s => s.id !== "done").map((s, i) => {
-                const isDone   = i < currentStepIndex;
+                const isDone = i < currentStepIndex;
                 const isActive = s.id === step;
                 return (
                   <div
@@ -533,7 +533,7 @@ export default function Home() {
         <div className="features">
           <div className="feature"><span>⚡</span> No login required</div>
           <div className="feature"><span>🌍</span> 10+ languages</div>
-          <div className="feature"><span>🗺️</span> Mindmap view</div>
+          <div className="feature"><span>🗺️</span> Knowledge Graph view</div>
           <div className="feature"><span>📦</span> Embeddable widget</div>
         </div>
 
