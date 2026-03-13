@@ -54,7 +54,7 @@ function flattenContent(content: TranslatedContent): Record<string, string> {
     (entries as ChangelogEntry[]).forEach((entry, i) => {
       flat[`${section}.${i}.title`] = entry.title;
       flat[`${section}.${i}.text`]  = entry.text;
-      flat[`${section}.${i}.raw`]   = entry.raw;
+      // Intentionally omitting 'raw' — it is a mapping key and should remain in English
     });
   }
   return flat;
@@ -68,10 +68,10 @@ function unflattenContent(
   const releaseTitle = flat["release.title"] ?? original.title;
 
   for (const [section, entries] of Object.entries(original.sections)) {
-    (entries as ChangelogEntry[]).forEach((_, i) => {
+    (entries as ChangelogEntry[]).forEach((entry, i) => {
       const title = flat[`${section}.${i}.title`] ?? "";
       const text  = flat[`${section}.${i}.text`]  ?? "";
-      const raw   = flat[`${section}.${i}.raw`]   ?? "";
+      const raw   = entry.raw; // Preserve original raw mapping key
       (sections[section as keyof ChangelogSections] as ChangelogEntry[]).push({ title, text, raw });
     });
   }

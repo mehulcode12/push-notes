@@ -9,12 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^2.0.4",
     "@google/genai": "^1.44.0",
     "@neondatabase/serverless": "^1.0.2",
     "lingo.dev": "^0.133.2",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "reactflow": "^11.11.4",
     "ws": "^8.19.0"
   },
   "devDependencies": {

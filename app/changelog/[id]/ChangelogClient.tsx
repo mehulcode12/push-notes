@@ -13,12 +13,12 @@ import {
 import { type TranslatedContent } from "@/lib/db";
 
 interface Props {
-  id:                string;
-  changelog:         ChangelogRecord;
-  initialContent:    TranslatedContent;
-  initialLocale:     string;
+  id: string;
+  changelog: ChangelogRecord;
+  initialContent: TranslatedContent;
+  initialLocale: string;
   translatedLocales: string[];
-  allTranslations:   Record<string, TranslatedContent>;
+  allTranslations: Record<string, TranslatedContent>;
 }
 
 type TranslateStatus = "idle" | "translating" | "done" | "error";
@@ -30,10 +30,10 @@ const VOICE_LANGS: Record<string, string> = {
 };
 
 const SECTION_CONFIG = [
-  { key: "added",    label: "Added",    color: "#22c55e", bg: "rgba(34,197,94,0.06)",  border: "rgba(34,197,94,0.15)"  },
-  { key: "fixed",    label: "Fixed",    color: "#3b82f6", bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.15)" },
-  { key: "changed",  label: "Changed",  color: "#f59e0b", bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.15)" },
-  { key: "breaking", label: "Breaking", color: "#ef4444", bg: "rgba(239,68,68,0.06)",  border: "rgba(239,68,68,0.15)"  },
+  { key: "added", label: "Added", color: "#22c55e", bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.15)" },
+  { key: "fixed", label: "Fixed", color: "#3b82f6", bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.15)" },
+  { key: "changed", label: "Changed", color: "#f59e0b", bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.15)" },
+  { key: "breaking", label: "Breaking", color: "#ef4444", bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.15)" },
 ];
 
 export default function ChangelogClient({
@@ -42,9 +42,9 @@ export default function ChangelogClient({
   initialContent,
   initialLocale,
   translatedLocales: initialTranslated,
-  allTranslations:   initialAllTranslations,
+  allTranslations: initialAllTranslations,
 }: Props) {
-  const router       = useRouter();
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [toast, setToast] = useState<"saving" | "saved" | "hidden">(() =>
@@ -53,33 +53,33 @@ export default function ChangelogClient({
 
   useEffect(() => {
     if (toast !== "saving") return;
-    const t1 = setTimeout(() => setToast("saved"),  2500);
+    const t1 = setTimeout(() => setToast("saved"), 2500);
     const t2 = setTimeout(() => setToast("hidden"), 4000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [toast]);
 
-  const [title,           setTitle]           = useState<string>(initialContent?.title ?? "New Update");
-  const [sections,        setSections]        = useState<ChangelogSections>(initialContent?.sections ?? { added: [], fixed: [], changed: [], breaking: [] });
-  const [locale,          setLocale]          = useState<string>(initialLocale ?? "en");
-  const [translated,      setTranslated]      = useState<string[]>(initialTranslated ?? []);
+  const [title, setTitle] = useState<string>(initialContent?.title ?? "New Update");
+  const [sections, setSections] = useState<ChangelogSections>(initialContent?.sections ?? { added: [], fixed: [], changed: [], breaking: [] });
+  const [locale, setLocale] = useState<string>(initialLocale ?? "en");
+  const [translated, setTranslated] = useState<string[]>(initialTranslated ?? []);
   const [allTranslations, setAllTranslations] = useState<Record<string, TranslatedContent>>(initialAllTranslations);
-  const [pickerOpen,      setPickerOpen]      = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedLangs, setSelectedLangs] = useState<string[]>([]);
-  const [transStatus,   setTransStatus]   = useState<Record<string, TranslateStatus>>({});
+  const [transStatus, setTransStatus] = useState<Record<string, TranslateStatus>>({});
   const [isTranslating, setIsTranslating] = useState(false);
-  const [speaking,      setSpeaking]      = useState<string | null>(null);
-  const [expanded,      setExpanded]      = useState<Record<string, boolean>>({});
-  const [embedOpen,     setEmbedOpen]     = useState(false);
-  const [copied,        setCopied]        = useState(false);
+  const [speaking, setSpeaking] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [embedOpen, setEmbedOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  const reachScore          = calculateGlobalReachScore((translated ?? []).filter(l => l !== "en") as SupportedLocale[]);
-  const totalEntries        = Object.values(sections ?? {}).flat().length;
+  const reachScore = calculateGlobalReachScore((translated ?? []).filter(l => l !== "en") as SupportedLocale[]);
+  const totalEntries = Object.values(sections ?? {}).flat().length;
   const translatableLocales = getTranslatableLocales();
 
   async function switchLocale(newLocale: string) {
     if (newLocale === locale) return;
-    
+
     // Instant switch from local cache
     const target = allTranslations[newLocale];
     if (target) {
@@ -98,7 +98,7 @@ export default function ChangelogClient({
     selectedLangs.forEach(l => { statusMap[l] = "translating"; });
     setTransStatus(statusMap);
     try {
-      const res  = await fetch("/api/translate", {
+      const res = await fetch("/api/translate", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ changelogId: id, locales: selectedLangs }),
       });
@@ -106,7 +106,7 @@ export default function ChangelogClient({
       const newStatus: Record<string, TranslateStatus> = {};
       selectedLangs.forEach(l => { newStatus[l] = data.translations?.[l] ? "done" : "error"; });
       setTransStatus(newStatus);
-      
+
       // Update local cache
       setAllTranslations(prev => ({ ...prev, ...data.translations }));
       setTranslated(data.translatedLocales ?? translated);
@@ -128,15 +128,15 @@ export default function ChangelogClient({
       return;
     }
     window.speechSynthesis.cancel();
-    const utterance  = new SpeechSynthesisUtterance(text);
-    utterance.lang   = VOICE_LANGS[locale] ?? "en-US";
-    utterance.rate   = 0.95;
-    const voices     = window.speechSynthesis.getVoices();
-    const langCode   = VOICE_LANGS[locale] ?? "en-US";
-    const best       = voices.find(v => v.lang === langCode && v.name.toLowerCase().includes("google"))
-                    ?? voices.find(v => v.lang.startsWith(langCode.slice(0, 2)));
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = VOICE_LANGS[locale] ?? "en-US";
+    utterance.rate = 0.95;
+    const voices = window.speechSynthesis.getVoices();
+    const langCode = VOICE_LANGS[locale] ?? "en-US";
+    const best = voices.find(v => v.lang === langCode && v.name.toLowerCase().includes("google"))
+      ?? voices.find(v => v.lang.startsWith(langCode.slice(0, 2)));
     if (best) utterance.voice = best;
-    utterance.onend   = () => setSpeaking(null);
+    utterance.onend = () => setSpeaking(null);
     utterance.onerror = () => setSpeaking(null);
     utteranceRef.current = utterance;
     setSpeaking(entryId);
@@ -205,9 +205,50 @@ export default function ChangelogClient({
         .reach-sub { font-size:10px; color:var(--muted); }
         .toolbar { display:flex; gap:8px; margin-bottom:28px; flex-wrap:wrap; align-items:center; }
         .lang-switcher { background:var(--surface); border:1px solid var(--border); color:var(--text); font-family:'JetBrains Mono',monospace; font-size:12px; padding:8px 12px; border-radius:6px; cursor:pointer; outline:none; }
-        .translate-btn { background:var(--amber); color:#000; border:none; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; padding:8px 16px; border-radius:6px; cursor:pointer; }
-        .translate-btn:hover { background:#fbbf24; }
-        .translate-btn:disabled { opacity:0.5; cursor:not-allowed; }
+        .translate-btn {
+            background: linear-gradient(180deg, rgba(245,158,11,0.1) 0%, rgba(245,158,11,0) 100%);
+            border: 1px solid rgba(245,158,11,0.25); border-top-color: rgba(245,158,11,0.5);
+            color: #f59e0b; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex; align-items: center; gap: 6px; position: relative; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .translate-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; opacity: 0; transition: opacity 0.3s ease;
+            background: linear-gradient(90deg, transparent, rgba(245,158,11,0.6), transparent);
+        }
+        .translate-btn:hover {
+            background: linear-gradient(180deg, rgba(245,158,11,0.2) 0%, rgba(245,158,11,0.05) 100%);
+            border-color: rgba(245,158,11,0.4); border-top-color: rgba(245,158,11,0.8); color: #fbbf24;
+            box-shadow: 0 6px 20px rgba(245,158,11,0.2), 0 0 12px rgba(245,158,11,0.1); transform: translateY(-1px);
+        }
+        .translate-btn:hover::before { opacity: 1; }
+        .translate-btn:active { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+        .translate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+        
+        .graph-btn {
+            background: linear-gradient(180deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0) 100%);
+            border: 1px solid rgba(59,130,246,0.25); border-top-color: rgba(59,130,246,0.5);
+            color: #3b82f6; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: inline-flex; align-items: center; gap: 6px; text-decoration: none; position: relative; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05); text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .graph-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; opacity: 0; transition: opacity 0.3s ease;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.6), transparent);
+        }
+        .graph-btn:hover {
+            background: linear-gradient(180deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.05) 100%);
+            border-color: rgba(59,130,246,0.4); border-top-color: rgba(59,130,246,0.8); color: #60a5fa;
+            box-shadow: 0 6px 20px rgba(59,130,246,0.2), 0 0 12px rgba(59,130,246,0.1); transform: translateY(-1px);
+        }
+        .graph-btn:hover::before { opacity: 1; }
+        .graph-btn:active { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+        .btn-icon { font-size: 14px; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .translate-btn:hover .btn-icon { transform: scale(1.15) rotate(15deg); }
+        .graph-btn:hover .btn-icon { transform: scale(1.15) rotate(5deg); }
         .picker-panel { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:20px; margin-bottom:24px; }
         .picker-title { font-size:12px; color:var(--muted); margin-bottom:16px; }
         .picker-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:8px; margin-bottom:16px; }
@@ -253,9 +294,9 @@ export default function ChangelogClient({
       {toast !== "hidden" && (
         <div className={`toast ${toast}`} onClick={() => setToast("hidden")}>
           {toast === "saving" ? (
-            <><div className="toast-spinner" /> Saving to database... <span style={{marginLeft:4,opacity:0.5}}>✕</span></>
+            <><div className="toast-spinner" /> Saving to database... <span style={{ marginLeft: 4, opacity: 0.5 }}>✕</span></>
           ) : (
-            <>✓ Saved — future lookups will be instant <span style={{marginLeft:4,opacity:0.5}}>✕</span></>
+            <>✓ Saved — future lookups will be instant <span style={{ marginLeft: 4, opacity: 0.5 }}>✕</span></>
           )}
         </div>
       )}
@@ -308,8 +349,14 @@ export default function ChangelogClient({
               ))}
             </select>
           )}
+          <a
+            href={`/changelog/${id}/graph`}
+            className="graph-btn"
+          >
+            <span className="btn-icon">🗺️</span> ChangeLog Graph
+          </a>
           <button className="translate-btn" onClick={() => setPickerOpen(!pickerOpen)} disabled={isTranslating}>
-            {pickerOpen ? "✕ Close" : "+ Translate"}
+            {pickerOpen ? <><span className="btn-icon">✕</span> Close</> : <><span className="btn-icon">🌍</span> Translate</>}
           </button>
         </div>
 
@@ -319,9 +366,9 @@ export default function ChangelogClient({
             <div className="picker-title">Select languages to translate into:</div>
             <div className="picker-grid">
               {translatableLocales.map(info => {
-                const isDone     = translated.includes(info.code) && info.code !== "en";
+                const isDone = translated.includes(info.code) && info.code !== "en";
                 const isSelected = selectedLangs.includes(info.code);
-                const status     = transStatus[info.code];
+                const status = transStatus[info.code];
                 return (
                   <div
                     key={info.code}
@@ -361,10 +408,10 @@ export default function ChangelogClient({
                 <span className="section-count">{entries.length}</span>
               </div>
               {entries.map((entry, i) => {
-                const entryId   = `${key}-${i}`;
-                const isOpen    = expanded[entryId] ?? false;
-                const isLong    = entry.text.length > 100;
-                const preview   = isLong ? entry.text.slice(0, 100).trimEnd() + "…" : entry.text;
+                const entryId = `${key}-${i}`;
+                const isOpen = expanded[entryId] ?? false;
+                const isLong = entry.text.length > 100;
+                const preview = isLong ? entry.text.slice(0, 100).trimEnd() + "…" : entry.text;
 
                 return (
                   <div key={i} className="entry" style={{ backgroundColor: bg, borderColor: border }}>
