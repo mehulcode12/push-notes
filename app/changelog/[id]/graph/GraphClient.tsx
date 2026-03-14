@@ -754,11 +754,11 @@ export default function GraphClient({
                     {/* Left */}
                     <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
                         <a href={`/changelog/${id}`} style={{
-                            color: "#3a3a3a", textDecoration: "none", fontSize: 11,
+                            color: "#737373", textDecoration: "none", fontSize: 11,
                             display: "flex", alignItems: "center", gap: 6, transition: "color 0.15s",
                         }}
                             onMouseEnter={e => (e.currentTarget.style.color = "#f59e0b")}
-                            onMouseLeave={e => (e.currentTarget.style.color = "#3a3a3a")}
+                            onMouseLeave={e => (e.currentTarget.style.color = "#737373")}
                         >
                             ← Back
                         </a>
@@ -766,7 +766,7 @@ export default function GraphClient({
                         <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", letterSpacing: "0.08em" }}>
                             KNOWLEDGE GRAPH
                         </span>
-                        <span style={{ fontSize: 11, color: "#2a2a2a" }}>{changelog.repoName}</span>
+                        <span style={{ fontSize: 11, color: "#525252" }}>{changelog.repoName}</span>
 
                         {translatedLocales.length > 1 && (
                             <select
@@ -817,7 +817,7 @@ export default function GraphClient({
                     padding: "12px 16px", backdropFilter: "blur(12px)",
                     fontFamily: "'JetBrains Mono', monospace",
                 }}>
-                    <div style={{ fontSize: 8, color: "#2a2a2a", letterSpacing: "0.15em", marginBottom: 10 }}>LEGEND</div>
+                    <div style={{ fontSize: 8, color: "#525252", letterSpacing: "0.15em", marginBottom: 10 }}>LEGEND</div>
                     {[
                         { color: "#ef4444", dot: true, text: "Hot file — touched 3+ commits" },
                         { color: "#f59e0b", dot: true, text: "Modified — 2 commits" },
@@ -830,10 +830,10 @@ export default function GraphClient({
                                 ? <div style={{ width: 7, height: 7, borderRadius: "50%", background: color, flexShrink: 0 }} />
                                 : <div style={{ width: 7, height: 7, flexShrink: 0 }} />
                             }
-                            <span style={{ fontSize: 9.5, color: "#3a3a3a" }}>{text}</span>
+                            <span style={{ fontSize: 9.5, color: "#737373" }}>{text}</span>
                         </div>
                     ))}
-                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #141414", fontSize: 9, color: "#2a2a2a" }}>
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #141414", fontSize: 9, color: "#525252" }}>
                         Click any node · Scroll to zoom · Drag to pan
                     </div>
                 </div>

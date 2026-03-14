@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { ChangelogSections } from "@/lib/gemini";
 import type { ChangelogRecord } from "@/lib/db";
 import {
@@ -169,7 +170,7 @@ export default function ChangelogClient({
         :root {
           --bg:#0a0a0a; --surface:#111; --surface2:#161616;
           --border:#1f1f1f; --border2:#2a2a2a;
-          --amber:#f59e0b; --text:#e5e5e5; --muted:#525252;
+          --amber:#f59e0b; --text:#e5e5e5; --muted:#888;
           --green:#22c55e; --blue:#3b82f6; --red:#ef4444;
         }
         body { background:var(--bg); color:var(--text); font-family:'JetBrains Mono',monospace; min-height:100vh; }
@@ -189,7 +190,7 @@ export default function ChangelogClient({
         .nav-btn { background:transparent; border:1px solid var(--border); color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:11px; padding:6px 12px; border-radius:6px; cursor:pointer; transition:all 0.15s; }
         .nav-btn:hover { border-color:var(--border2); color:var(--text); }
         .nav-btn.primary { border-color:var(--amber); color:var(--amber); }
-        .nav-btn.primary:hover { background:rgba(245,158,11,0.08); }
+        .nav-btn.primary:hover { background:rgba(255, 255, 255, 0.82); }
         .cl-header { margin-bottom:32px; }
         .repo-name { font-family:'Instrument Serif',serif; font-size:36px; font-weight:400; color:#fff; margin-bottom:12px; line-height:1.1; }
         .meta-row { display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
@@ -349,12 +350,12 @@ export default function ChangelogClient({
               ))}
             </select>
           )}
-          <a
+          <Link
             href={`/changelog/${id}/graph`}
             className="graph-btn"
           >
             <span className="btn-icon">🗺️</span> ChangeLog Graph
-          </a>
+          </Link>
           <button className="translate-btn" onClick={() => setPickerOpen(!pickerOpen)} disabled={isTranslating}>
             {pickerOpen ? <><span className="btn-icon">✕</span> Close</> : <><span className="btn-icon">🌍</span> Translate</>}
           </button>
