@@ -77,7 +77,7 @@ PushNotes fixes both problems at once.
 
 ## Demo
 
-[![PushNotes Demo](./screenshots/thumbnail.jpeg)](https://youtu.be/rl1EjdmHNlc)
+[![PushNotes Demo](./screenshots/thumbnail.jpg)](https://youtu.be/rl1EjdmHNlc)
 
 > Click the image to watch the full demo video
 
