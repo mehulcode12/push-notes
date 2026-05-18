@@ -4,7 +4,7 @@
 
 > Paste any public GitHub repo URL → get a beautiful, AI-generated changelog in 10+ languages. Instantly.
 
-[![Built for Lingo.dev Hackathon](https://img.shields.io/badge/Built%20for-Lingo.dev%20Hackathon%20%233-f59e0b?style=flat-square)](https://lingo.dev)
+[![Lingo.dev](https://img.shields.io/badge/Built%20for-Lingo.dev%20Hackathon%20%233-f59e0b?style=flat-square)](https://lingo.dev)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square)](https://nextjs.org)
 [![Neon](https://img.shields.io/badge/Database-Neon%20Postgres-00e699?style=flat-square)](https://neon.tech)
 [![Gemini](https://img.shields.io/badge/AI-Gemini%202.5%20Flash-4285f4?style=flat-square)](https://aistudio.google.com)
@@ -95,8 +95,6 @@ PushNotes fixes both problems at once.
 | Graph | React Flow | Renders the radial Knowledge Graph from server-computed node positions |
 | Hosting | Vercel-ready | Configured for instant deploy — not publicly hosted to preserve free API limits |
 | Data | GitHub Public API | Fetches commit metadata and full file diffs for AI context |
-
-> Lingo.dev is not a feature added on top of PushNotes. It is the foundation the entire translation architecture is built on.
 
 ---
 
@@ -472,7 +470,7 @@ This is not a project that uses Lingo.dev as a checkbox. The entire data model �
 
 ## Built For
 
-**[Lingo.dev Multilingual Hackathon #3](https://lingo.dev)**
+**[Lingo.dev #3](https://lingo.dev)**
 
 ---
 
